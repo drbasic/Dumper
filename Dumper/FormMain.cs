@@ -126,8 +126,12 @@ namespace Dumper
                         counter++;
                     }
                     if (stopIt)
-                        break;
+                        return;
                 }
+                Log(string.Format("На рабочем столе сформирован файл {0} размером {1}",
+                        archiveFileName,
+                        (new FileInfo(archiveFileName)).Length / (1024 * 1024)));
+                
             }
         }
 
