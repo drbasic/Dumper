@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using System.Management;
+using System.Net;
 
 namespace Dumper
 {
@@ -75,6 +76,8 @@ namespace Dumper
         private void UpdateLog(string text)
         {
             eLog.Text += text + "\r\n";
+            eLog.SelectionStart = eLog.Text.Length;
+            eLog.ScrollToCaret();
         }
 
         private void Log(string text)
@@ -110,7 +113,7 @@ namespace Dumper
                     string archiveFile = string.Format(@"dump-{0}.dmp", p.Id);
                     string tempDir = Path.GetTempPath();
                     string tempFile = string.Format(@"{0}\dump-{1}.dmp", tempDir, p.Id);
-                    
+
                     using (FileStream dumpFile = File.Create(tempFile, 64 * 1024, FileOptions.DeleteOnClose))
                     {
                         Log(string.Format("Снимаю дамп процесса id={0}", p.Id));
@@ -128,17 +131,27 @@ namespace Dumper
                     if (stopIt)
                         return;
                 }
-                Log(string.Format("На рабочем столе сформирован файл {0} размером {1}",
+                Log(string.Format("На рабочем столе сформирован файл {0} размером {1} МБ",
                         archiveFileName,
                         (new FileInfo(archiveFileName)).Length / (1024 * 1024)));
-                
+                Log("Загружаю файл на сервер...");
+                bool succ = UploadFile(archiveFileName);
+                if (succ)
+                {
+                    Log("Спасибо!");
+                    File.Delete(archiveFileName);
+                }
+                else
+                {
+                    Log("Пожалуйста, выложите файл на Яндекс.Диск и отправьте ссылку на него в техподержку.");
+                }
             }
         }
 
         private static string GetProccessesInfo(List<Process> processes)
         {
             StringBuilder sb = new StringBuilder();
-            foreach(var p in processes)
+            foreach (var p in processes)
             {
                 sb.AppendFormat(@"{0} {1}", p.Id, GetCommandLine(p.Id));
                 sb.AppendLine();
@@ -161,15 +174,91 @@ namespace Dumper
         }
 
 
-
         private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
         {
-            
+            if (workerThread == null)
+                return;
+            stopIt = true;
+            workerThread.Join();
         }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
             UpdateUI();
         }
+
+        bool UploadFile(string filename)
+        {
+            string ftpServerIP = "37.194.254.25";
+            string ftpUserName = "yauploader";
+            string ftpPassword = "yauploaderpass";
+
+            FileInfo objFile = new FileInfo(filename);
+            FtpWebRequest objFTPRequest;
+
+            // Create FtpWebRequest object 
+            string remoteFileName = string.Format("{0}", objFile.Name);
+            remoteFileName = remoteFileName.Replace(" ", "+");
+            objFTPRequest = (FtpWebRequest)FtpWebRequest.Create(
+                new Uri("ftp://" + ftpServerIP + "/" + remoteFileName));
+
+            // Set Credintials
+            objFTPRequest.Credentials = new NetworkCredential(ftpUserName, ftpPassword);
+
+            // By default KeepAlive is true, where the control connection is 
+            // not closed after a command is executed.
+            objFTPRequest.KeepAlive = false;
+
+            // Set the data transfer type.
+            objFTPRequest.UseBinary = true;
+
+            // Set content length
+            objFTPRequest.ContentLength = objFile.Length;
+
+            // Set request method
+            objFTPRequest.Method = WebRequestMethods.Ftp.UploadFile;
+
+            // Set buffer size
+            int intBufferLength = 16 * 1024;
+            byte[] objBuffer = new byte[intBufferLength];
+
+            try
+            {
+                // Opens a file to read
+                using (FileStream objFileStream = objFile.OpenRead())
+                {
+                    Log("Установка соединения...");
+                    // Get Stream of the file
+                    using (Stream objStream = objFTPRequest.GetRequestStream())
+                    {
+                        int len = 0;
+                        Int64 total = 0;
+                        int last_done_percent = 0;
+                        while ((len = objFileStream.Read(objBuffer, 0, intBufferLength)) != 0)
+                        {
+                            if (stopIt)
+                                return false;
+                            // Write file Content
+                            objStream.Write(objBuffer, 0, len);
+                            total += len;
+                            int done_percent = (int)(100 * total / objFile.Length);
+                            if (last_done_percent != done_percent)
+                            {
+                                last_done_percent = done_percent;
+                                Log(string.Format("Отправлено: {0}%", done_percent));
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(string.Format("Ошибка загрузки файла.\n{0}", ex.ToString()));
+                return false;
+            }
+            Log("Файл успешно отправлен!");
+            return true;
+        }
     }
 }
+ 
