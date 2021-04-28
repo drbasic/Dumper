@@ -89,9 +89,7 @@ namespace Dumper
         {
             var allProcesses = Process.GetProcesses()
                .ToList();
-            var processes = allProcesses
-               .Where(a => a.ProcessName == "browser")
-               .ToList();
+            var processes = GetProcessesByName();
 
             Log(string.Format("Найдено {0} процессов", processes.Count));
 
@@ -134,18 +132,24 @@ namespace Dumper
                 Log(string.Format("На рабочем столе сформирован файл {0} размером {1} МБ",
                         archiveFileName,
                         (new FileInfo(archiveFileName)).Length / (1024 * 1024)));
-                Log("Загружаю файл на сервер...");
-                bool succ = UploadFile(archiveFileName);
-                if (succ)
-                {
-                    Log("Спасибо!");
-                    File.Delete(archiveFileName);
-                }
-                else
-                {
-                    Log("Пожалуйста, выложите файл на Яндекс.Диск и отправьте ссылку на него в техподержку.");
-                }
+                //Log("Загружаю файл на сервер...");
+                //bool succ = UploadFile(archiveFileName);
+                //if (succ)
+                //{
+                //    Log("Спасибо!");
+                //    File.Delete(archiveFileName);
+                //}
+                //else
+                //{
+                //    Log("Пожалуйста, выложите файл на Яндекс.Диск и отправьте ссылку на него в техподержку.");
+                //}
             }
+        }
+        private List<Process> GetProcessesByName(string name = "browser")
+        {
+            return Process.GetProcesses()
+               .Where(a => a.ProcessName == name)
+               .ToList();
         }
 
         private static string GetProccessesInfo(List<Process> processes)
@@ -258,6 +262,24 @@ namespace Dumper
             }
             Log("Файл успешно отправлен!");
             return true;
+        }
+
+        private void checkBoxPID_CheckedChanged(object sender, EventArgs e)
+        {
+            comboBoxSetPID.Enabled = checkBoxProcPID.Checked;
+            if (!checkBoxProcPID.Checked) return;
+            var processes = GetProcessesByName();
+
+            comboBoxSetPID.Items.Clear();
+            foreach (var process in processes.OrderBy(x => x.Id))
+            {
+                comboBoxSetPID.Items.Add(process.Id);
+            }
+        }
+
+        private void checkBoxProcAll_CheckedChanged(object sender, EventArgs e)
+        {
+            groupBoxProcOpt.Enabled = !checkBoxProcAll.Checked;
         }
     }
 }
