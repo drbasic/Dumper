@@ -128,9 +128,9 @@
             this.checkBoxProcAll.AutoSize = true;
             this.checkBoxProcAll.Location = new System.Drawing.Point(13, 13);
             this.checkBoxProcAll.Name = "checkBoxProcAll";
-            this.checkBoxProcAll.Size = new System.Drawing.Size(148, 17);
+            this.checkBoxProcAll.Size = new System.Drawing.Size(186, 17);
             this.checkBoxProcAll.TabIndex = 7;
-            this.checkBoxProcAll.Text = "Все процессы браузера";
+            this.checkBoxProcAll.Text = "Все процессы браузера (долго)";
             this.checkBoxProcAll.UseVisualStyleBackColor = true;
             this.checkBoxProcAll.CheckedChanged += new System.EventHandler(this.checkBoxProcAll_CheckedChanged);
             // 

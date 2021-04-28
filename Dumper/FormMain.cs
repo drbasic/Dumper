@@ -7,11 +7,11 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Management;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using System.Management;
-using System.Net;
 
 namespace Dumper
 {
@@ -89,10 +89,41 @@ namespace Dumper
         {
             var allProcesses = Process.GetProcesses()
                .ToList();
-            var processes = GetProcessesByName();
+            var procesesYaBro = Process.GetProcessesByName("browser").ToList();
+            var processesRequired = new List<Process>();
+            if (checkBoxProcAll.Checked)
+            {
+                processesRequired = procesesYaBro;
+            }
+            else
+            {
+                if (checkBoxProcMain.Checked)
+                {
+                    Process process = procesesYaBro.Find(x => x.MainWindowHandle != IntPtr.Zero);
+                    if (process != null) processesRequired.Add(process);
+                    else Log("Не удалось найти главный процесс");
+                }
+                if (checkBoxProcGPU.Checked)
+                {
+                    Process process = procesesYaBro.Find(x => GetCommandLine(x.Id).Contains("--type=gpu-process"));
+                    if (process != null) processesRequired.Add(process);
+                    else Log("Не удалось найти GPU процесс");
+                }
+                if (checkBoxProcPID.Checked)
+                {
+                    int pid = 0;
+                    string txt = string.Empty;
+                    comboBoxSetPID.Invoke((MethodInvoker)delegate { txt = comboBoxSetPID.Text;});
+                    if (int.TryParse(txt, out pid))
+                    {
+                        Process process = procesesYaBro.Find(x => x.Id == pid);
+                        if (process != null) processesRequired.Add(process);
+                    }
+                    else Log(string.Format("Не удалось найти процесс с PID:{0}", txt));
+                }
+            }
 
-            Log(string.Format("Найдено {0} процессов", processes.Count));
-
+            Log(string.Format("Найдено {0} процессов", processesRequired.Count));
             using (ZipFile zip = new ZipFile())
             {
                 zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestSpeed;
@@ -100,12 +131,12 @@ namespace Dumper
                 string archiveFileName = string.Format(@"{0}\dumps-{1}.zip", desktopDir, DateTime.Now.ToString("yyyyMMdd HHmm"));
                 Log(string.Format("Создаю файл {0}", archiveFileName));
 
-                zip.AddEntry("info.txt", GetProccessesInfo(processes));
+                zip.AddEntry("info.txt", GetProccessesInfo(procesesYaBro));
                 zip.AddEntry("all info.txt", GetProccessesInfo(allProcesses));
                 zip.Save(archiveFileName);
 
                 int counter = 1;
-                foreach (var p in processes)
+                foreach (var p in processesRequired)
                 {
 
                     string archiveFile = string.Format(@"dump-{0}.dmp", p.Id);
@@ -120,7 +151,7 @@ namespace Dumper
                             dumpFile.SafeFileHandle,
                             Dumper.DumpOptions.WithFullMemory
                             );
-                        Log(string.Format("{0}/{1}. Добавляю в архив файл {2} размером {3} МБ ", counter, processes.Count, archiveFile, dumpFile.Length / (1024 * 1024)));
+                        Log(string.Format("{0}/{1}. Добавляю в архив файл {2} размером {3} МБ ", counter, processesRequired.Count, archiveFile, dumpFile.Length / (1024 * 1024)));
                         dumpFile.Seek(0, SeekOrigin.Begin);
                         zip.AddEntry(archiveFile, dumpFile);
                         zip.Save();
@@ -145,19 +176,13 @@ namespace Dumper
                 //}
             }
         }
-        private List<Process> GetProcessesByName(string name = "browser")
-        {
-            return Process.GetProcesses()
-               .Where(a => a.ProcessName == name)
-               .ToList();
-        }
 
         private static string GetProccessesInfo(List<Process> processes)
         {
             StringBuilder sb = new StringBuilder();
             foreach (var p in processes)
             {
-                sb.AppendFormat(@"{0} {1}", p.Id, GetCommandLine(p.Id));
+                sb.AppendFormat(@"name:{0} id:{1} CommandLine:{2}", p.ProcessName, p.Id, GetCommandLine(p.Id));
                 sb.AppendLine();
                 sb.AppendLine();
             }
@@ -268,8 +293,7 @@ namespace Dumper
         {
             comboBoxSetPID.Enabled = checkBoxProcPID.Checked;
             if (!checkBoxProcPID.Checked) return;
-            var processes = GetProcessesByName();
-
+            var processes = Process.GetProcessesByName("browser").ToList();
             comboBoxSetPID.Items.Clear();
             foreach (var process in processes.OrderBy(x => x.Id))
             {
@@ -283,4 +307,3 @@ namespace Dumper
         }
     }
 }
- 
