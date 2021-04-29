@@ -118,12 +118,13 @@ namespace Dumper
                     {
                         Process process = procesesYaBro.Find(x => x.Id == pid);
                         if (process != null) processesRequired.Add(process);
+                        else Log(string.Format("Не удалось найти процесс с PID:{0}", txt));
                     }
-                    else Log(string.Format("Не удалось найти процесс с PID:{0}", txt));
+                    else Log(string.Format("Не удалось распознать PID", txt));
                 }
             }
 
-            Log(string.Format("Найдено {0} процессов", processesRequired.Count));
+            Log(string.Format("Процессов найдено {0}", processesRequired.Count));
             using (ZipFile zip = new ZipFile())
             {
                 zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestSpeed;
@@ -182,7 +183,7 @@ namespace Dumper
             StringBuilder sb = new StringBuilder();
             foreach (var p in processes)
             {
-                sb.AppendFormat(@"name:{0} id:{1} CommandLine:{2}", p.ProcessName, p.Id, GetCommandLine(p.Id));
+                sb.AppendFormat(@"Process:{0} pid:{1} CommandLine:{2}", p.ProcessName, p.Id, GetCommandLine(p.Id));
                 sb.AppendLine();
                 sb.AppendLine();
             }

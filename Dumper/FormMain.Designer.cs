@@ -43,7 +43,7 @@
             // 
             // btnStart
             // 
-            this.btnStart.Location = new System.Drawing.Point(12, 130);
+            this.btnStart.Location = new System.Drawing.Point(13, 115);
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(75, 23);
             this.btnStart.TabIndex = 0;
@@ -57,12 +57,12 @@
             this.eLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.eLog.Location = new System.Drawing.Point(12, 159);
+            this.eLog.Location = new System.Drawing.Point(12, 144);
             this.eLog.Multiline = true;
             this.eLog.Name = "eLog";
             this.eLog.ReadOnly = true;
             this.eLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.eLog.Size = new System.Drawing.Size(433, 171);
+            this.eLog.Size = new System.Drawing.Size(433, 186);
             this.eLog.TabIndex = 1;
             // 
             // timer1
@@ -118,7 +118,7 @@
             this.groupBoxProcOpt.Controls.Add(this.checkBoxProcGPU);
             this.groupBoxProcOpt.Location = new System.Drawing.Point(12, 35);
             this.groupBoxProcOpt.Name = "groupBoxProcOpt";
-            this.groupBoxProcOpt.Size = new System.Drawing.Size(433, 89);
+            this.groupBoxProcOpt.Size = new System.Drawing.Size(433, 74);
             this.groupBoxProcOpt.TabIndex = 6;
             this.groupBoxProcOpt.TabStop = false;
             this.groupBoxProcOpt.Text = "Выборочно";
