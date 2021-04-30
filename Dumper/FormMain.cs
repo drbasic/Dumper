@@ -91,29 +91,29 @@ namespace Dumper
                .ToList();
             var procesesYaBro = Process.GetProcessesByName("browser").ToList();
             var processesRequired = new List<Process>();
-            if (checkBoxProcAll.Checked)
+            if (checkBoxProcessAll.Checked)
             {
                 processesRequired = procesesYaBro;
             }
             else
             {
-                if (checkBoxProcMain.Checked)
+                if (checkBoxProcessMain.Checked)
                 {
                     Process process = procesesYaBro.Find(x => x.MainWindowHandle != IntPtr.Zero);
                     if (process != null) processesRequired.Add(process);
                     else Log("Не удалось найти главный процесс");
                 }
-                if (checkBoxProcGPU.Checked)
+                if (checkBoxProcessGPU.Checked)
                 {
                     Process process = procesesYaBro.Find(x => GetCommandLine(x.Id).Contains("--type=gpu-process"));
                     if (process != null) processesRequired.Add(process);
                     else Log("Не удалось найти GPU процесс");
                 }
-                if (checkBoxProcPID.Checked)
+                if (checkBoxProcessPID.Checked)
                 {
                     int pid = 0;
                     string txt = string.Empty;
-                    comboBoxSetPID.Invoke((MethodInvoker)delegate { txt = comboBoxSetPID.Text;});
+                    comboBoxpPocessID.Invoke((MethodInvoker)delegate { txt = comboBoxpPocessID.Text;});
                     if (int.TryParse(txt, out pid))
                     {
                         Process process = procesesYaBro.Find(x => x.Id == pid);
@@ -292,19 +292,19 @@ namespace Dumper
 
         private void checkBoxPID_CheckedChanged(object sender, EventArgs e)
         {
-            comboBoxSetPID.Enabled = checkBoxProcPID.Checked;
-            if (!checkBoxProcPID.Checked) return;
+            comboBoxpPocessID.Enabled = checkBoxProcessPID.Checked;
+            if (!checkBoxProcessPID.Checked) return;
             var processes = Process.GetProcessesByName("browser").ToList();
-            comboBoxSetPID.Items.Clear();
+            comboBoxpPocessID.Items.Clear();
             foreach (var process in processes.OrderBy(x => x.Id))
             {
-                comboBoxSetPID.Items.Add(process.Id);
+                comboBoxpPocessID.Items.Add(process.Id);
             }
         }
 
         private void checkBoxProcAll_CheckedChanged(object sender, EventArgs e)
         {
-            groupBoxProcOpt.Enabled = !checkBoxProcAll.Checked;
+            groupBoxProcOpt.Enabled = !checkBoxProcessAll.Checked;
         }
     }
 }
