@@ -7,11 +7,11 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Management;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using System.Management;
-using System.Net;
 
 namespace Dumper
 {
@@ -89,12 +89,42 @@ namespace Dumper
         {
             var allProcesses = Process.GetProcesses()
                .ToList();
-            var processes = allProcesses
-               .Where(a => a.ProcessName == "browser")
-               .ToList();
+            var procesesYaBro = Process.GetProcessesByName("browser").ToList();
+            var processesRequired = new List<Process>();
+            if (checkBoxProcessAll.Checked)
+            {
+                processesRequired = procesesYaBro;
+            }
+            else
+            {
+                if (checkBoxProcessMain.Checked)
+                {
+                    Process process = procesesYaBro.Find(x => x.MainWindowHandle != IntPtr.Zero);
+                    if (process != null) processesRequired.Add(process);
+                    else Log("Не удалось найти главный процесс");
+                }
+                if (checkBoxProcessGPU.Checked)
+                {
+                    Process process = procesesYaBro.Find(x => GetCommandLine(x.Id).Contains("--type=gpu-process"));
+                    if (process != null) processesRequired.Add(process);
+                    else Log("Не удалось найти GPU процесс");
+                }
+                if (checkBoxProcessPID.Checked)
+                {
+                    int pid = 0;
+                    string txt = string.Empty;
+                    comboBoxpPocessID.Invoke((MethodInvoker)delegate { txt = comboBoxpPocessID.Text;});
+                    if (int.TryParse(txt, out pid))
+                    {
+                        Process process = procesesYaBro.Find(x => x.Id == pid);
+                        if (process != null) processesRequired.Add(process);
+                        else Log(string.Format("Не удалось найти процесс с PID:{0}", txt));
+                    }
+                    else Log(string.Format("Не удалось распознать PID", txt));
+                }
+            }
 
-            Log(string.Format("Найдено {0} процессов", processes.Count));
-
+            Log(string.Format("Процессов найдено {0}", processesRequired.Count));
             using (ZipFile zip = new ZipFile())
             {
                 zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestSpeed;
@@ -102,12 +132,12 @@ namespace Dumper
                 string archiveFileName = string.Format(@"{0}\dumps-{1}.zip", desktopDir, DateTime.Now.ToString("yyyyMMdd HHmm"));
                 Log(string.Format("Создаю файл {0}", archiveFileName));
 
-                zip.AddEntry("info.txt", GetProccessesInfo(processes));
+                zip.AddEntry("info.txt", GetProccessesInfo(procesesYaBro));
                 zip.AddEntry("all info.txt", GetProccessesInfo(allProcesses));
                 zip.Save(archiveFileName);
 
                 int counter = 1;
-                foreach (var p in processes)
+                foreach (var p in processesRequired)
                 {
 
                     string archiveFile = string.Format(@"dump-{0}.dmp", p.Id);
@@ -122,7 +152,7 @@ namespace Dumper
                             dumpFile.SafeFileHandle,
                             Dumper.DumpOptions.WithFullMemory
                             );
-                        Log(string.Format("{0}/{1}. Добавляю в архив файл {2} размером {3} МБ ", counter, processes.Count, archiveFile, dumpFile.Length / (1024 * 1024)));
+                        Log(string.Format("{0}/{1}. Добавляю в архив файл {2} размером {3} МБ ", counter, processesRequired.Count, archiveFile, dumpFile.Length / (1024 * 1024)));
                         dumpFile.Seek(0, SeekOrigin.Begin);
                         zip.AddEntry(archiveFile, dumpFile);
                         zip.Save();
@@ -134,17 +164,17 @@ namespace Dumper
                 Log(string.Format("На рабочем столе сформирован файл {0} размером {1} МБ",
                         archiveFileName,
                         (new FileInfo(archiveFileName)).Length / (1024 * 1024)));
-                Log("Загружаю файл на сервер...");
-                bool succ = UploadFile(archiveFileName);
-                if (succ)
-                {
-                    Log("Спасибо!");
-                    File.Delete(archiveFileName);
-                }
-                else
-                {
-                    Log("Пожалуйста, выложите файл на Яндекс.Диск и отправьте ссылку на него в техподержку.");
-                }
+                //Log("Загружаю файл на сервер...");
+                //bool succ = UploadFile(archiveFileName);
+                //if (succ)
+                //{
+                //    Log("Спасибо!");
+                //    File.Delete(archiveFileName);
+                //}
+                //else
+                //{
+                //    Log("Пожалуйста, выложите файл на Яндекс.Диск и отправьте ссылку на него в техподержку.");
+                //}
             }
         }
 
@@ -153,7 +183,7 @@ namespace Dumper
             StringBuilder sb = new StringBuilder();
             foreach (var p in processes)
             {
-                sb.AppendFormat(@"{0} {1}", p.Id, GetCommandLine(p.Id));
+                sb.AppendFormat(@"Process:{0} pid:{1} CommandLine:{2}", p.ProcessName, p.Id, GetCommandLine(p.Id));
                 sb.AppendLine();
                 sb.AppendLine();
             }
@@ -259,6 +289,22 @@ namespace Dumper
             Log("Файл успешно отправлен!");
             return true;
         }
+
+        private void checkBoxPID_CheckedChanged(object sender, EventArgs e)
+        {
+            comboBoxpPocessID.Enabled = checkBoxProcessPID.Checked;
+            if (!checkBoxProcessPID.Checked) return;
+            var processes = Process.GetProcessesByName("browser").ToList();
+            comboBoxpPocessID.Items.Clear();
+            foreach (var process in processes.OrderBy(x => x.Id))
+            {
+                comboBoxpPocessID.Items.Add(process.Id);
+            }
+        }
+
+        private void checkBoxProcAll_CheckedChanged(object sender, EventArgs e)
+        {
+            groupBoxProcOpt.Enabled = !checkBoxProcessAll.Checked;
+        }
     }
 }
- 
